@@ -15,7 +15,7 @@ export default function Post({_id,title,summary,cover,content,createdAt,author})
         <h2>{title}</h2>
         </Link>
         <p className="info">
-          <a className="author">{author.username}</a>
+          <a className="author">{author.name}</a>
           <div>
             <time>{formatISO9075(new Date(createdAt))}</time>
           </div>

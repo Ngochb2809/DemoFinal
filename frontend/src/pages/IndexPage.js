@@ -1,14 +1,17 @@
 import Post from "../Post";
 import React, { useEffect, useState, useContext, useRef } from "react";
 import MapGL, {Marker, Source, Layer} from 'react-map-gl';
-import {UserContext} from "./UserContext";
+import {UserContext} from "../UserContext";
 import { GeolocateControl } from 'react-map-gl';
 import Dropzone from 'react-dropzone';
 // import axios from "axios";
 import { FaMapMarker,FaStar,FaTimes,FaDirections   } from 'react-icons/fa';
+import { io } from 'socket.io-client';
+import { toast } from 'react-toastify';
 
 export default function IndexPage(){
   const [posts,setPosts] = useState([]);
+  const [categories, setCategories] = useState([]);
   const [pins, setPins] = useState([]);
   const [currentPlaceId, setCurrentPlaceId] = useState(null);
   const [selectedPin, setSelectedPin] = useState(null);
@@ -26,6 +29,7 @@ export default function IndexPage(){
   const [comment, setComment] = useState(''); // Trạng thái lưu trữ nội dung comment mới
   const [comments, setComments] = useState([]); // Trạng thái lưu trữ tất cả các comment của địa điểm được chọn
   const [showDirections, setShowDirections] = useState(false);
+  const [userRating, setUserRating] = useState(0);
   const mapRef = useRef(); 
  // const [directionsLayer, setDirectionsLayer] = useState(null);
   const [directionsSource, setDirectionsSource] = useState(null);
@@ -34,7 +38,11 @@ export default function IndexPage(){
   });
   const GeolocateController = useRef();
   const [isMarkerSelected, setIsMarkerSelected] = useState(false);
-
+  const [previousRating, setPreviousRating] = useState(0); // Đánh giá trước đó
+  const socket = io('/', {
+    reconnection: true
+})
+  
   useEffect(() => {
       fetch('http://localhost:4000/post').then(reponse => {
           reponse.json().then(posts => {
@@ -44,6 +52,13 @@ export default function IndexPage(){
   }, []);
 
   useEffect(() => {
+    const savedComments = localStorage.getItem('comments');
+    if (savedComments) {
+      setComments(JSON.parse(savedComments));
+    } else {
+      setComments([]); // Ensure comments is always an array
+    }
+  
     const getPins = async () => {
       try {    
         const response = await fetch("http://localhost:4000/pins");
@@ -57,7 +72,7 @@ export default function IndexPage(){
       }
     };
     getPins();
-
+  
     GeolocateControl.current?.trigger()
   }, [currentPlaceId, pins, viewport, GeolocateController]);
   
@@ -70,6 +85,7 @@ export default function IndexPage(){
     setSelectedMarkerInfo(pins.find(pin => pin._id === id));
     setCurrentPinId(id); // Lưu id của pin hiện tại
     setIsMarkerSelected(true);
+    //debugger;
   }
 
   const handleAddClick = (e) => {
@@ -80,8 +96,10 @@ export default function IndexPage(){
       long,
     });
   }
-  const currentUser = userInfo?.username;
 
+  const currentUserEmail = localStorage.getItem('userEmail');
+
+  
   const handleImageDrop = (acceptedFiles) => {
     // Xử lý khi người dùng tải lên hình ảnh
     const files = acceptedFiles.map(file => {
@@ -101,26 +119,10 @@ export default function IndexPage(){
       setComments(JSON.parse(savedComments));
     }
   }, []);
-  const handleCommentSubmit = (e) => {
-    e.preventDefault();
-    if (comment.trim() === '') {
-      return;
-    }
-    const newComment = {
-      content: comment,
-    };
-    // Thêm comment mới vào state và lưu vào localStorage hoặc sessionStorage
-    setComments(prevComments => ({
-      ...prevComments,
-      [currentPinId]: [...(prevComments[currentPinId] || []), newComment]
-    }));
-    localStorage.setItem('comments', JSON.stringify({...comments, [currentPinId]: [...(comments[currentPinId] || []), newComment]}));
-    setComment('');
-  };  
   const handleSubmit = async (e) => {
     e.preventDefault();
     const newPin = {
-      username: currentUser,
+      email : currentUserEmail,
       title,
       desc,
       price,
@@ -143,21 +145,115 @@ export default function IndexPage(){
       if (!response.ok) {
         throw new Error('Network response was not ok');
       }
-  
-      const pinData = await response.json();
-      // Thêm mới đối tượng comment với key là id của pin và value là một mảng rỗng
-      setComments(prevComments => ({ ...prevComments, [pinData._id]: [] }));
-      setPins([...pins, pinData]);
-      setNewPlace(null);
     } catch (error) {
       console.error('There was a problem with the fetch operation:', error);
     }
   };
 
+  
+
+  const addComment = async (e) => {
+    e.preventDefault();
+    try {
+      const response = await fetch(`http://localhost:4000/pin/comment/${currentPinId}`, {
+        method: 'PUT',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',  
+        },
+        body: JSON.stringify({ comment })
+      });
+      if (!response.ok) {
+        throw new Error('Network response was not ok');
+      }
+      const data = await response.json();
+      if (data.success === true) {
+        setComment('');
+        const newComment = {
+          text: comment,
+        };
+        // Update comments state with new comment
+        setComments(prevComments => ({
+          ...prevComments,
+          [currentPinId]: [...(prevComments[currentPinId] || []), newComment]
+        }));
+        toast.success("comment added");
+        // socket.emit('comment', data.pin.comments);
+      }
+    } catch (error) {
+      console.error('There was a problem with the fetch operation:', error);
+      toast.error("There was a problem adding the comment");
+    }
+  }  
+  
+  const fetchCategories = async () => {
+    try {
+        const response = await fetch('http://localhost:4000/category', {
+            credentials: 'include',
+        });
+        if (!response.ok) {
+            throw new Error('Failed to fetch categories');
+        }
+        const data = await response.json();
+        setCategories(data.data);
+    } catch (error) {
+        console.error('Error fetching categories:', error);
+    }
+  };
+
+  useEffect(() => {
+    fetchCategories();
+  }, []);
+
   const handleCloseSidebar = () => {
     setIsMarkerSelected(false); // Đặt trạng thái marker đã được chọn là false khi người dùng đóng side bar
   };
 
+  const filterPinsByCategory = (categoryName) => {
+    if (categoryName === "") {
+      // Nếu người dùng chọn "Select a category", hiển thị tất cả các pins
+      setPins(pins);
+    } else {
+      // Lọc pins dựa trên tên category
+      const filteredPins = pins.filter(pin => pin.title.toLowerCase().includes(categoryName.toLowerCase()));
+      setPins(filteredPins);
+    }
+  };
+  useEffect(() => {
+    const previousRatingFromStorage = parseInt(localStorage.getItem('previousRating'));
+    console.log('previousRatingFromStorage', previousRatingFromStorage);
+    if (!isNaN(previousRatingFromStorage)) {
+      setPreviousRating(previousRatingFromStorage);
+    }
+  }, []);
+
+  const handleStarClick = async (rating) => {
+    setUserRating(rating); // Cập nhật trạng thái đánh giá của người dùng
+    localStorage.setItem('previousRating', rating);
+    try {
+      const response = await fetch(`http://localhost:4000/pin/rate/${currentPinId}`, {
+        method: 'PUT',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ userRating: rating })
+      });
+      if (!response.ok) {
+        throw new Error('Network response was not ok');
+      }
+      const data = await response.json();
+      if (data.success) {
+        toast.success("Rating added successfully");
+        // Cập nhật lại số ngôi sao ngay lập tức sau khi người dùng đánh giá
+        setUserRating(rating);
+      }
+    } catch (error) {
+      console.error('There was a problem with the fetch operation:', error);
+      toast.error("There was a problem adding the rating");
+    }
+  };
+  
   
 
   const handleDirections = async () => {
@@ -247,10 +343,16 @@ export default function IndexPage(){
     }
   };  
   
-  
   return(
     <div style={{position: "relative"}}>
-      
+        <div>
+          <select onChange={(e) => filterPinsByCategory(e.target.value)}>
+            <option value="">Select a category</option>
+            {categories.map(category => (
+              <option key={category._id} value={category.name}>{category.name}</option>
+            ))}
+          </select>
+        </div>
         <MapGL
           ref={mapRef}
           // mapRef={mapRef}
@@ -356,6 +458,7 @@ export default function IndexPage(){
           )}
         </MapGL>
         {selectedMarkerInfo && isMarkerSelected &&(
+          
           <div className="sidebar" style={{position: "absolute", top: 0, right: 0, width: "300px", height: "460px", backgroundColor: "#fff", boxShadow: "-2px 0 5px rgba(0, 0, 0, 0.1)", zIndex: 1000, overflowY: "auto"}}>
             <button onClick={handleCloseSidebar} style={{background: "none", border: "none", cursor: "pointer", position: "absolute", top: "0", right: "10px"}}>
               <FaTimes style={{fontSize: "1.5rem"}} />
@@ -370,12 +473,27 @@ export default function IndexPage(){
                 <h2>{selectedMarkerInfo.title}</h2>
                 <p>{selectedMarkerInfo.desc}</p>
                 <p>Price: {selectedMarkerInfo.price}</p>
-                <div className="ratings">
-                  {Array(selectedMarkerInfo.rating).fill(<FaStar className="star" />)}
+                <div>
+                  <div className="previous-ratings">
+                    {[...Array(previousRating)].map((_, index) => (
+                      <FaStar key={index} className="star" />
+                    ))}
+                  </div>
+                  <label>Rating:</label><br />
+                  {/* Hiển thị dropdown để chọn số sao mới */}
+                  <select className="formInput" value={userRating} onChange={(e) => handleStarClick(parseInt(e.target.value))}>
+                    <option value="0">Select a rating</option>
+                    <option value="1">1</option>
+                    <option value="2">2</option>
+                    <option value="3">3</option>
+                    <option value="4">4</option>
+                    <option value="5">5</option>
+                  </select>
+                  <br />
                 </div>
                 <p>Posted by: {selectedMarkerInfo.username}</p>
                 {/* Form để thêm comment */}
-                <form onSubmit={handleCommentSubmit}>
+                <form onSubmit={addComment}>
                   <textarea
                     className="formInput"
                     placeholder="Leave a comment..."
@@ -383,14 +501,18 @@ export default function IndexPage(){
                     onChange={(e) => setComment(e.target.value)}
                   ></textarea>
                   <button className="formSubmitButton" type="submit">Submit</button>
-                </form>
+                </form>   
                 {/* Danh sách các comment */}
-                <div className="comments">
-                  <h3>Comments:</h3>
-                  {selectedMarkerInfo && comments[currentPinId] && comments[currentPinId].map((comment, index) => (
-                    <div key={index}>{comment.content}</div>
-                  ))}
-                </div>
+                {comments[currentPinId] && (
+                  <div className="comments">
+                    <h3>Comments:</h3>
+                    {comments[currentPinId].map((comment, index) => (
+                      <div key={index}>
+                        <p>Text: {comment.text}</p>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
           </div>

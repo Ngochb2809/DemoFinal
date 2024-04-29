@@ -46,6 +46,7 @@ const checkBlogger = (req, res, next) => {
       return res.status(400).json({success: false, error: "Not found user"});
   }
   const accountRole = accountData.role;
+   console.log(accountRole);
    if (accountRole === 'Admin' || accountRole === 'Blogger') {
       next();
    }

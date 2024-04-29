@@ -37,7 +37,7 @@ const upload = multer({ storage: storage });
 // Route to get all bloggers
 router.get('/blogger', verifyToken, checkAdmin, async (req, res) => {
     try {
-        res.json(await BloggerModel.find().populate('Account'));
+        res.json(await BloggerModel.find().populate('account'));
     } catch (error) {
         console.error("Error while fetching blogger list:", error);
         res.json({ success: false, error: "Internal Server Error" });
@@ -58,7 +58,7 @@ router.post('/blogger/add', verifyToken, checkAdmin, async (req, res) => {
     try {
         debugger;
         // Extract data from request body
-        const { name, dob, gender, address, email, password } = req.body;
+        const { name, dob, gender, address, email, username, password } = req.body;
         const hashPassword = bcrypt.hashSync(password, salt);
 
         // Check if image is provided
@@ -67,7 +67,7 @@ router.post('/blogger/add', verifyToken, checkAdmin, async (req, res) => {
         // }
 
         // Read image data from file
-        const imageData = fs.createReadStream(req.file.path);
+        //const imageData = fs.createReadStream(req.file.path);
 
         // Check if user with provided email already exists
         const availableUser = await AccountModel.findOne({ email: email });
@@ -78,20 +78,21 @@ router.post('/blogger/add', verifyToken, checkAdmin, async (req, res) => {
         // Create new account for the blogger
         const account = await AccountModel.create({
             email: email,
+            username: username,
             password: hashPassword,
-            role: '' // Specify the role for the account
+            role: 'blogger' // Specify the role for the account
         });
-
+        console.log('account oke');
         // Create new blogger with the provided data
         const newBlogger = await BloggerModel.create({
             name: name,
             dob: dob,
             gender: gender,
             address: address,
-            image: imageData,
+           // image: imageData,
             account: account._id // Associate the blogger with the created account
         });
-
+        console.log('newBlogger oke');
         // Check if the blogger was successfully created
         if (newBlogger) {
             return res.status(201).json({ success: true, message: "Blogger created successfully" });
@@ -114,6 +115,26 @@ router.post('/blogger/add', verifyToken, checkAdmin, async (req, res) => {
     }
 });
 
+router.delete('/blogger/delete/:id', verifyToken, checkAdmin, async (req, res) => {
+    try {
+        const bloggerId = req.params.id;
+        const Blogger = await BloggerModel.findById(bloggerId);
+        const deleteAccount = await AccountModel.findByIdAndDelete(Blogger.account);
+        const deletedBlogger = await BloggerModel.deleteById(bloggerId);
+        if (!deletedBlogger) {
+            res.status(404).json({ success: false, error: "category not found" });
+            return;
+        }
+        if (!deleteAccount) {
+            res.status(404).json({ success: false, error: "account not found" });
+            return;
+        }
+        res.status(200).json({ success: true, message: "blogger deleted successfully" });
+    } catch (error) {
+        console.error("Error while deleting category:", error);
+        res.status(500).json({ success: false, error: "Internal Server Error" });
+    }
+});
 
 //---------------------------------------------------------------------------
 //edit admin
@@ -144,7 +165,8 @@ router.get('/edit/:id', verifyToken, checkAdmin, async (req, res) => {
 });
 
 // Handle form submission for editing an admin
-router.post('/edit/:id', verifyToken, checkAdmin, upload.single('image'), async (req, res) => {
+router.post('/blogger/edit/:id', verifyToken, checkAdmin, async (req, res) => {
+    // , upload.single('image')
     try {
         // Fetch admin by ID
         const bloggerId = req.params.id;
@@ -165,13 +187,14 @@ router.post('/edit/:id', verifyToken, checkAdmin, upload.single('image'), async 
         blogger.gender = req.body.gender;
         blogger.address = req.body.address;
         // If a new image is uploaded, update it
-        if (req.file) {
-            const imageData = fs.createReadStream(req.file.path);
-            blogger.image = imageData;
-        }
+        // if (req.file) {
+        //     const imageData = fs.createReadStream(req.file.path);
+        //     blogger.image = imageData;
+        // }
         await blogger.save();
 
         account.email = req.body.email;
+        account.username = req.body.username;
         account.password = bcrypt.hashSync(req.body.password, salt);
         await account.save();
 
@@ -193,7 +216,7 @@ router.post('/edit/:id', verifyToken, checkAdmin, upload.single('image'), async 
     }
 });
 
-router.get('/profile', verifyToken, checkBlogger, async (req, res) => {
+router.get('/blogger/profile', verifyToken, checkBlogger, async (req, res) => {
     try{
         var accountId = req.accountId;
         var AccountData = await AccountModel.findById(accountId._id);
@@ -259,6 +282,7 @@ router.post('/editBlogger/:id', verifyToken, checkBlogger, upload.single('image'
         } 
         await blogger.save();
         
+        account.username = req.body.username;
         account.password = bcrypt.hashSync(req.body.password, salt);
         await account.save();
 

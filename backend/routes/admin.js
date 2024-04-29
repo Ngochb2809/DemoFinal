@@ -124,7 +124,7 @@ router.get('/', async (req, res) => {
 //     }
 // });
 
-router.get('/profile', verifyToken , checkAdmin, async (req, res) => {
+router.get('/admin/profile', verifyToken , checkAdmin, async (req, res) => {
     try{
         var accountId = req.accountId;
         var AccountData = await AccountModel.findById(accountId._id);
@@ -190,6 +190,7 @@ router.post('/editAdmin/:id', verifyToken , checkAdmin, upload.single('image'), 
         } 
         await admin.save();
         
+        account.username = req.body.username;
         account.password = bcrypt.hashSync(req.body.password, salt);
         await account.save();
 

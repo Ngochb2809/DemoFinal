@@ -5,6 +5,7 @@ import { FaEye, FaEyeSlash, FaFacebook, FaGoogle } from "react-icons/fa";
 export default function RegisterPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [username, setUserName] = useState('');
   const [role, setRole] = useState('');
   const [showPassword, setShowPassword] = useState(false);
 
@@ -34,11 +35,13 @@ export default function RegisterPage() {
     }
     const response = await fetch('http://localhost:4000/register', {
       method: 'POST',
-      body: JSON.stringify({ email, password, role }), // Bao gồm trường role trong dữ liệu gửi đi
+      body: JSON.stringify({ email, username,password, role }), // Bao gồm trường role trong dữ liệu gửi đi
       headers: { 'Content-Type': 'application/json' },
     });
     if (response.status === 200) {
       alert('registration successful');
+    } else if (response.status === 400) {
+      alert('Email is already in use');
     } else {
       alert('registration failed');
     }
@@ -54,6 +57,11 @@ export default function RegisterPage() {
             placeholder="Email"
             value={email}
             onChange={ev => setEmail(ev.target.value)} />
+          <input
+            type="text"
+            placeholder="User Name"
+            value={username}
+            onChange={ev => setUserName(ev.target.value)} />
           <input
             type="text"
             placeholder="Role"

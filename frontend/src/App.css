@@ -444,6 +444,7 @@ div.post-page a.edit-btn {
   background-color: #0056b3;
 }
 footer {
+  width: 100%;  
   background-color: #333; /* Thay đổi màu nền */
   /* color: #fff; */
   padding: 20px; /* Thay đổi padding */
@@ -819,13 +820,180 @@ footer a {
 .category-table button {
   padding: 6px 12px;
   margin-right: 6px;
-  background-color: #dc3545;
+  background-color: gray;
   color: #fff;
   border: none;
   cursor: pointer;
 }
 
 .category-table button:hover {
-  background-color: #c82333;
+  background-color: gray;
+}
+/* CSS for Blogger Table */
+/* Guest List Container */
+.guest-container {
+  margin-bottom: 20px;
 }
 
+.guest-container h2 {
+  font-size: 24px;
+  margin-bottom: 10px;
+}
+
+.guest-container p {
+  font-size: 16px;
+  color: #888;
+}
+
+.add-guest {
+  margin-top: 20px;
+}
+
+.add-guest h3 {
+  font-size: 20px;
+  margin-bottom: 10px;
+}
+
+.add-guest input,
+.add-guest select {
+  margin-bottom: 10px;
+  width: 100%;
+  padding: 8px;
+}
+
+.guest-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.guest-table th,
+.guest-table td {
+  border: 1px solid #ddd;
+  padding: 8px;
+}
+
+.guest-table th {
+  background-color: #f2f2f2;
+  font-size: 16px;
+}
+
+/* Blogger List Container */
+.blogger-container {
+  margin-bottom: 20px;
+}
+
+.blogger-container h2 {
+  font-size: 24px;
+  margin-bottom: 10px;
+}
+
+.blogger-container p {
+  font-size: 16px;
+  color: #888;
+}
+
+.add-blogger {
+  margin-top: 20px;
+}
+
+.add-blogger h3 {
+  font-size: 20px;
+  margin-bottom: 10px;
+}
+
+.add-blogger input,
+.add-blogger select {
+  margin-bottom: 10px;
+  width: 100%;
+  padding: 8px;
+}
+
+.blogger-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.blogger-table th,
+.blogger-table td {
+  border: 1px solid #ddd;
+  padding: 8px;
+}
+
+.blogger-table th {
+  background-color: #f2f2f2;
+  font-size: 16px;
+}
+/* Phần bình luận */
+.comments {
+  margin-top: 20px;
+  border-top: 1px solid #ccc;
+  padding-top: 20px;
+}
+
+.comment {
+  margin-bottom: 20px;
+}
+
+.comment p {
+  margin-bottom: 5px;
+}
+
+.comment p:first-child {
+  font-weight: bold;
+}
+
+/* Phần thêm bình luận */
+.add-comment {
+  margin-top: 20px;
+}
+
+.add-comment textarea {
+  width: 10%;
+  height: 50px;
+  margin-bottom: 10px;
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+}
+
+.add-comment button {
+  background-color: #007bff;
+  color: #fff;
+  border: none;
+  padding: 10px 20px;
+  margin-bottom: 10px;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.add-comment button:hover {
+  background-color: #0056b3;
+}
+.likes-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 10px;
+}
+
+.like-button,
+.dislike-button {
+  background-color: #007bff;
+  color: #fff;
+  border: none;
+  padding: 5px 10px;
+  margin: 0 5px;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.like-button:hover,
+.dislike-button:hover {
+  background-color: #0056b3;
+}
+
+.likes-count {
+  font-size: 16px;
+  margin: 0 10px;
+}

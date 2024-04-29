@@ -25,8 +25,17 @@ app.use(express.json());
 app.use(cookieParser());
 app.use('/uploads', express.static(__dirname + '/uploads'));
 
+const http = require('http');
+const server = http.createServer(app);
+const { Server } = require("socket.io");
+const io = new Server(server);
+
 mongoose.connect('mongodb+srv://thanhpqgch210568:1@cluster0.gac1iv3.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0')
 
+app.use((req, res, next) => {
+  req.io = io;
+  next();
+});
 
 app.use(pinRouter);
 app.use(postRouter);
@@ -37,4 +46,14 @@ app.use(authRouter);
 app.use(roleRouter);
 app.use(categoryRouter);
 
-app.listen(4000);
+const port = process.env.PORT || 4000
+
+io.on('connection', (socket) => {
+    socket.on('comment', (msg) => {
+      io.emit("new-comment", msg);
+    })
+});
+
+server.listen(port, () => {
+  console.log(` Server running on port ${port}`);
+});
